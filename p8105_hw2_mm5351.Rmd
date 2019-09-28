@@ -73,5 +73,74 @@ In the Mr. Trash Wheel dataset, there are `r nrow(trash_data)` rows and `r ncol(
 
 In the combined precipiation dataset for 2017 and 2018, there are `r nrow(precipfull_data)` rows representing each month of the year and `r ncol(precipfull_data)` columns for month, year 2017, total precipation for year 2017, year 2018, and total precipiation for year 2018. The total precipiation for 2017 was `r sum(pull(precip2017_data, total))`. This compares to the total precipiation for 2018, which was `r sum(pull(precip2018_data, total))`. Part of the difference lies in the fact that 2017 had data for `r nrow(precip2017_data)` months, whereas 2018 only had data for `r nrow(precip2018_data)` months.
 
+*Problem 2*
+First, clean the data in pols-month.csv. Use separate() to break up the variable mon into integer variables year, month, and day; replace month number with month name; create a president variable taking values gop and dem, and remove prez_dem and prez_gop; and remove the day variable.
+```{r}
+##Read and clean pols-month.csv data
+polsmonth_data = 
+  read_csv("./Data/fivethirtyeight_datasets/pols-month.csv") %>% 
+  janitor::clean_names() %>% 
+  
+##Separate "mon" into integer variables year, month and day. 
+separate(col = mon, sep = "-", into = c("year", "month", "day")) %>%  
+mutate(
+  year = as.integer(year),
+  month = as.integer(month),
+  day = as.integer(day)
+)
 
+##Replace month number with month name
+```
+
+*Problem 3*
+Load and tidy the data. Note that, although these data may seem fairly well formatted initially, the names of a categorical predictor and the case structure of string variables changed over time; you’ll need to address this in your data cleaning. Also, some rows seem duplicated, and these will need to be removed (hint: google something like “dplyr remove duplicate rows” to get started).
+
+Produce a well-structured, reader-friendly table showing the rank in popularity of the name “Olivia” as a female baby name over time; this should have rows for ethnicities and columns for year. Produce a similar table showing the most popular name among male children over time.
+
+Finally, for male, white non-hispanic children born in 2016, produce a scatter plot showing the number of children with a name (y axis) against the rank in popularity of that name (x axis).
+```{r}
+##Read and clean popular baby names csv
+babynames_data = 
+  read_csv("./Data/Popular_Baby_Names.csv") %>% 
+  janitor::clean_names() %>%
+  mutate(
+    childs_first_name = str_to_upper(childs_first_name),
+    ethnicity = recode(ethnicity, "ASIAN AND PACI" = "ASIAN AND PACIFIC ISLANDER"),
+    ethnicity = recode(ethnicity, "BLACK NON HISP" = "BLACK NON HISPANIC"),
+    ethnicity = recode(ethnicity, "WHITE NON HISP" = "WHITE NON HISPANIC")
+  ) %>% 
+
+##Remove duplicated rows
+distinct() %>%   
+  
+##Make table showing rank in popularity of name Olivia over time
+  select(everything(), -count) %>% 
+  filter(gender == "FEMALE", childs_first_name == "OLIVIA") %>%  
+  
+pivot_wider(
+  names_from = year_of_birth,
+  values_from = rank,
+)
+```
+
+```{r}
+##Make table showing most popular name among male children over time
+babynames_data = 
+  read_csv("./Data/Popular_Baby_Names.csv") %>% 
+  janitor::clean_names() %>%
+  mutate(
+    childs_first_name = str_to_upper(childs_first_name),
+    ethnicity = recode(ethnicity, "ASIAN AND PACI" = "ASIAN AND PACIFIC ISLANDER"),
+    ethnicity = recode(ethnicity, "BLACK NON HISP" = "BLACK NON HISPANIC"),
+    ethnicity = recode(ethnicity, "WHITE NON HISP" = "WHITE NON HISPANIC")
+  ) %>% 
+distinct() %>%   
+select(everything(), -count, -ethnicity) %>% 
+filter(gender == "MALE", rank < 11) %>% 
+  
+pivot_wider(
+  names_from = year_of_birth,
+  values_from = childs_first_name
+)
+```  
 
