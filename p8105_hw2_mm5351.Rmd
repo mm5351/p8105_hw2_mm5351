@@ -21,17 +21,16 @@ round the number of sports balls to the nearest integer and converts the result 
 ```{r}
 ##Read and clean Mr. Trash Wheel data
 trash_data =
-   readxl::read_excel("./Data/HealthyHarborWaterWheelTotals2018-7-28.xlsx", sheet = "Mr. Trash Wheel", range = "A2:N338") 
-trash_data = janitor::clean_names(trash_data) 
+   readxl::read_excel("./Data/HealthyHarborWaterWheelTotals2018-7-28.xlsx", sheet = "Mr. Trash Wheel", range = "A2:N338")  
+trash_data = janitor::clean_names(trash_data)  
 
 ##Omit rows that do not include dumpster-specific data
 drop_na(trash_data, dumpster)
 
-
 ##Round the number of sports balls to the nearest integer and convert to integer variable
 mutate( 
   trash_data,
-  sports_balls = as.integer(round(sports_balls, digits = 0)))
+  sports_balls = as.integer(round(sports_balls, digits = 0))) 
 ```
 
 Read and clean precipitation data for 2017 and 2018. For each, omit rows without precipitation data and add a variable year. Next, combine precipitation datasets and convert month to a character variable (the variable month.name is built into R and should be useful).
@@ -64,33 +63,59 @@ precipfull_data =
 ##Convert month to character variable
 mutate(
   month = as.character(month.name))
-precipfull_data %>% view()
 ```
 
 Write a paragraph about these data; you are encouraged to use inline R. Be sure to note the number of observations in both resulting datasets, and give examples of key variables. For available data, what was the total precipitation in 2018? What was the median number of sports balls in a dumpster in 2017?
 
-In the Mr. Trash Wheel dataset, there are `r nrow(trash_data)` rows and `r ncol(trash_data)` columns. Each row represents data for a different dumpster, and many of the columns depict the type of trash found in the Inner Harbor of Baltimore. For example, between 2014 and 2018, there were `r sum(pull(trash_data, plastic_bottles))` plastic bottles, `r sum(pull(trash_data, cigarette_butts))` cigarette butts, and `r sum(pull(trash_data, grocery_bags))` grocery bags. The median number of sports balls in a dumpster in 2017 was `r median(pull(trash_data, sports_balls))`. The total number of trash collected was `r sum(pull(trash_data, weight_tons))` tons, which was incinerated and made to power `r sum(pull(trash_data, homes_powered))` homes. 
+In the Mr. Trash Wheel dataset, there are `r nrow(trash_data)` rows and `r ncol(trash_data)` columns. Each row represents data for a different dumpster, and many of the columns depict the type of trash found in the Inner Harbor of Baltimore. For example, between 2014 and 2018, there were `r sum(pull(trash_data, plastic_bottles))` plastic bottles, `r sum(pull(trash_data, cigarette_butts))` cigarette butts, and `r sum(pull(trash_data, grocery_bags))` grocery bags. The median number of sports balls in a dumpster in 2017 was `r filter(trash_data, year == 2017) %>% pull(sports_balls) %>% median()`. The total number of trash collected was `r sum(pull(trash_data, weight_tons))` tons, which was incinerated and made to power `r sum(pull(trash_data, homes_powered))` homes. 
 
 In the combined precipiation dataset for 2017 and 2018, there are `r nrow(precipfull_data)` rows representing each month of the year and `r ncol(precipfull_data)` columns for month, year 2017, total precipation for year 2017, year 2018, and total precipiation for year 2018. The total precipiation for 2017 was `r sum(pull(precip2017_data, total))`. This compares to the total precipiation for 2018, which was `r sum(pull(precip2018_data, total))`. Part of the difference lies in the fact that 2017 had data for `r nrow(precip2017_data)` months, whereas 2018 only had data for `r nrow(precip2018_data)` months.
 
 *Problem 2*
 First, clean the data in pols-month.csv. Use separate() to break up the variable mon into integer variables year, month, and day; replace month number with month name; create a president variable taking values gop and dem, and remove prez_dem and prez_gop; and remove the day variable.
+
 ```{r}
 ##Read and clean pols-month.csv data
 polsmonth_data = 
   read_csv("./Data/fivethirtyeight_datasets/pols-month.csv") %>% 
   janitor::clean_names() %>% 
   
-##Separate "mon" into integer variables year, month and day. 
+##Separate "mon" into integer variables year, month and day. Replace month number with month name
 separate(col = mon, sep = "-", into = c("year", "month", "day")) %>%  
 mutate(
   year = as.integer(year),
   month = as.integer(month),
-  day = as.integer(day)
-)
+  day = as.integer(day),
+  month = month.name[month],
 
-##Replace month number with month name
+##Create a president variable taking values gop and dem
+  president = prez_dem + prez_gop
+) %>% 
+
+##Remove prez_dem, prez_gop, and the day variable
+select(everything(), -prez_dem, -prez_gop, -day)
+
 ```
+
+Second, clean the data in snp.csv using a similar process to the above. For consistency across datasets, arrange according to year and month, and organize so that year and month are the leading columns.
+```{r}
+##Read and clean data in snp.csv
+snp_data = 
+  read_csv("./Data/fivethirtyeight_datasets/snp.csv") %>% 
+  janitor::clean_names() %>% 
+
+##Arrange according to year and month; year and month as leading columns
+separate(col = date, sep = "/", into = c("month", "day", "year")) %>% 
+mutate(
+  month = as.integer(month),
+  day = as.integer(day),
+  year = as.integer(year),
+  month = month.name[month]
+) %>% 
+select(everything(), -day) %>% 
+  arrange(year, month, close)
+```
+
 
 *Problem 3*
 Load and tidy the data. Note that, although these data may seem fairly well formatted initially, the names of a categorical predictor and the case structure of string variables changed over time; you’ll need to address this in your data cleaning. Also, some rows seem duplicated, and these will need to be removed (hint: google something like “dplyr remove duplicate rows” to get started).
