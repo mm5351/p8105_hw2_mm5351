@@ -21,15 +21,14 @@ round the number of sports balls to the nearest integer and converts the result 
 ```{r}
 ##Read and clean Mr. Trash Wheel data
 trash_data =
-   readxl::read_excel("./Data/HealthyHarborWaterWheelTotals2018-7-28.xlsx", sheet = "Mr. Trash Wheel", range = "A2:N338")  
-trash_data = janitor::clean_names(trash_data)  
+   readxl::read_excel("./Data/Trash-Wheel-Collection-Totals-8-6-19.xlsx", sheet = "Mr. Trash Wheel", range = "A2:N408") %>%    
+janitor::clean_names() %>%    
 
 ##Omit rows that do not include dumpster-specific data
-drop_na(trash_data, dumpster)
+drop_na(dumpster) %>% 
 
 ##Round the number of sports balls to the nearest integer and convert to integer variable
 mutate( 
-  trash_data,
   sports_balls = as.integer(round(sports_balls, digits = 0))) 
 ```
 
@@ -38,7 +37,7 @@ Read and clean precipitation data for 2017 and 2018. For each, omit rows without
 ```{r}
 ##Read and clean 2017 precipiation data
 precip2017_data = 
-  readxl::read_excel("./Data/HealthyHarborWaterWheelTotals2018-7-28.xlsx", sheet = "2017 Precipitation", range = "A2:B14") %>% 
+  readxl::read_excel("./Data/Trash-Wheel-Collection-Totals-8-6-19.xlsx", sheet = "2017 Precipitation", range = "A2:B14") %>% 
   janitor::clean_names() %>% 
 
 ##Omit rows without precipiation data and add variable year
@@ -48,7 +47,7 @@ mutate(
 
 ##Read and clean 2018 precipiation data
 precip2018_data =
-  readxl::read_excel("./Data/HealthyHarborWaterWheelTotals2018-7-28.xlsx", sheet = "2018 Precipitation", range = "A2:B14") %>% 
+  readxl::read_excel("./Data/Trash-Wheel-Collection-Totals-8-6-19.xlsx", sheet = "2018 Precipitation", range = "A2:B14") %>% 
   janitor::clean_names() %>% 
   
 ##Omit rows without precipiation data and add variable year
@@ -94,7 +93,6 @@ mutate(
 
 ##Remove prez_dem, prez_gop, and the day variable
 select(everything(), -prez_dem, -prez_gop, -day)
-
 ```
 
 Second, clean the data in snp.csv using a similar process to the above. For consistency across datasets, arrange according to year and month, and organize so that year and month are the leading columns.
@@ -116,7 +114,6 @@ select(everything(), -day) %>%
   arrange(year, month, close)
 ```
 
-
 *Problem 3*
 Load and tidy the data. Note that, although these data may seem fairly well formatted initially, the names of a categorical predictor and the case structure of string variables changed over time; you’ll need to address this in your data cleaning. Also, some rows seem duplicated, and these will need to be removed (hint: google something like “dplyr remove duplicate rows” to get started).
 
@@ -136,36 +133,40 @@ babynames_data =
   ) %>% 
 
 ##Remove duplicated rows
-distinct() %>%   
-  
+distinct()  
+```  
+
+```{r}
 ##Make table showing rank in popularity of name Olivia over time
+Olivia_rank = babynames_data %>% 
   select(everything(), -count) %>% 
   filter(gender == "FEMALE", childs_first_name == "OLIVIA") %>%  
-  
 pivot_wider(
   names_from = year_of_birth,
   values_from = rank,
-)
+) %>% 
+  select(everything(), -childs_first_name, -gender)
 ```
 
 ```{r}
 ##Make table showing most popular name among male children over time
-babynames_data = 
-  read_csv("./Data/Popular_Baby_Names.csv") %>% 
-  janitor::clean_names() %>%
-  mutate(
-    childs_first_name = str_to_upper(childs_first_name),
-    ethnicity = recode(ethnicity, "ASIAN AND PACI" = "ASIAN AND PACIFIC ISLANDER"),
-    ethnicity = recode(ethnicity, "BLACK NON HISP" = "BLACK NON HISPANIC"),
-    ethnicity = recode(ethnicity, "WHITE NON HISP" = "WHITE NON HISPANIC")
-  ) %>% 
-distinct() %>%   
-select(everything(), -count, -ethnicity) %>% 
-filter(gender == "MALE", rank < 11) %>% 
+Male_rank = babynames_data %>% 
+select(everything(), -count) %>% 
+filter(gender == "MALE", rank == 1) %>% 
   
 pivot_wider(
   names_from = year_of_birth,
-  values_from = childs_first_name
-)
+  values_from = childs_first_name,
+) %>% 
+  select(everything(), -gender)
 ```  
+
+Finally, for male, white non-hispanic children born in 2016, produce a scatter plot showing the number of children with a name (y axis) against the rank in popularity of that name (x axis).
+```{r}
+filter(babynames_data, gender == "MALE", ethnicity == "WHITE NON HISPANIC", year_of_birth == "2016") %>% 
+  ggplot(aes(x = rank, y = count)) +
+  geom_point()
+```
+         
+
 
