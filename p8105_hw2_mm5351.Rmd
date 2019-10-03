@@ -12,13 +12,8 @@ library(tidyverse)
 library(readxl)
 ```
 
-*Problem 1*
-Read and clean the Mr. Trash Wheel sheet:
-specify the sheet in the Excel file and to omit non-data entries (rows with notes / figures; columns containing notes) using arguments in read_excel
-use reasonable variable names
-omit rows that do not include dumpster-specific data
-round the number of sports balls to the nearest integer and converts the result to an integer variable (using as.integer)
-```{r}
+***Problem 1***
+```{r Mr.Trash}
 ##Read and clean Mr. Trash Wheel data
 trash_data =
    readxl::read_excel("./Data/Trash-Wheel-Collection-Totals-8-6-19.xlsx", sheet = "Mr. Trash Wheel", range = "A2:N408") %>%    
@@ -32,9 +27,7 @@ mutate(
   sports_balls = as.integer(round(sports_balls, digits = 0))) 
 ```
 
-Read and clean precipitation data for 2017 and 2018. For each, omit rows without precipitation data and add a variable year. Next, combine precipitation datasets and convert month to a character variable (the variable month.name is built into R and should be useful).
-
-```{r}
+```{r precipiation}
 ##Read and clean 2017 precipiation data
 precip2017_data = 
   readxl::read_excel("./Data/Trash-Wheel-Collection-Totals-8-6-19.xlsx", sheet = "2017 Precipitation", range = "A2:B14") %>% 
@@ -64,16 +57,12 @@ mutate(
   month = as.character(month.name))
 ```
 
-Write a paragraph about these data; you are encouraged to use inline R. Be sure to note the number of observations in both resulting datasets, and give examples of key variables. For available data, what was the total precipitation in 2018? What was the median number of sports balls in a dumpster in 2017?
+In the Mr. Trash Wheel dataset, there are `r nrow(trash_data)` rows and `r ncol(trash_data)` columns. Each row represents data for a different dumpster, and many of the columns depict the type of trash found in the Inner Harbor of Baltimore. The median number of sports balls in a dumpster in 2017 was `r filter(trash_data, year == 2017) %>% pull(sports_balls) %>% median()`. The total number of trash collected between 2014 and 2018 was `r sum(pull(trash_data, weight_tons))` tons, which was incinerated and made to power `r sum(pull(trash_data, homes_powered))` homes. 
 
-In the Mr. Trash Wheel dataset, there are `r nrow(trash_data)` rows and `r ncol(trash_data)` columns. Each row represents data for a different dumpster, and many of the columns depict the type of trash found in the Inner Harbor of Baltimore. For example, between 2014 and 2018, there were `r sum(pull(trash_data, plastic_bottles))` plastic bottles, `r sum(pull(trash_data, cigarette_butts))` cigarette butts, and `r sum(pull(trash_data, grocery_bags))` grocery bags. The median number of sports balls in a dumpster in 2017 was `r filter(trash_data, year == 2017) %>% pull(sports_balls) %>% median()`. The total number of trash collected was `r sum(pull(trash_data, weight_tons))` tons, which was incinerated and made to power `r sum(pull(trash_data, homes_powered))` homes. 
+In the combined precipiation dataset for 2017 and 2018, there are `r nrow(precipfull_data)` rows representing each month of the year and `r ncol(precipfull_data)` columns for month, year 2017, total precipation for year 2017, year 2018, and total precipiation for year 2018. The total precipiation for 2017 was `r sum(pull(precip2017_data, total))`. This compares to the total precipiation for 2018, which was `r sum(pull(precip2018_data, total))`.
 
-In the combined precipiation dataset for 2017 and 2018, there are `r nrow(precipfull_data)` rows representing each month of the year and `r ncol(precipfull_data)` columns for month, year 2017, total precipation for year 2017, year 2018, and total precipiation for year 2018. The total precipiation for 2017 was `r sum(pull(precip2017_data, total))`. This compares to the total precipiation for 2018, which was `r sum(pull(precip2018_data, total))`. Part of the difference lies in the fact that 2017 had data for `r nrow(precip2017_data)` months, whereas 2018 only had data for `r nrow(precip2018_data)` months.
-
-*Problem 2*
-First, clean the data in pols-month.csv. Use separate() to break up the variable mon into integer variables year, month, and day; replace month number with month name; create a president variable taking values gop and dem, and remove prez_dem and prez_gop; and remove the day variable.
-
-```{r}
+***Problem 2***
+```{r pols-month, eval = TRUE}
 ##Read and clean pols-month.csv data
 polsmonth_data = 
   read_csv("./Data/fivethirtyeight_datasets/pols-month.csv") %>% 
@@ -88,15 +77,14 @@ mutate(
   month = month.name[month],
 
 ##Create a president variable taking values gop and dem
-  president = prez_dem + prez_gop
-) %>% 
+  president = 
+    case_when(prez_dem == 1 ~ "dem", prez_gop == 1 ~ "gop")) %>% 
 
 ##Remove prez_dem, prez_gop, and the day variable
 select(everything(), -prez_dem, -prez_gop, -day)
 ```
 
-Second, clean the data in snp.csv using a similar process to the above. For consistency across datasets, arrange according to year and month, and organize so that year and month are the leading columns.
-```{r}
+```{r snp}
 ##Read and clean data in snp.csv
 snp_data = 
   read_csv("./Data/fivethirtyeight_datasets/snp.csv") %>% 
@@ -113,13 +101,12 @@ mutate(
 select(year, month, close) 
 ```
 
-Third, tidy the unemployment data so that it can be merged with the previous datasets. This process will involve switching from “wide” to “long” format; ensuring that key variables have the same name; and ensuring that key variables take the same values.
-
-```{r}
+```{r unemployment}
 ##Tidy unemployment data
 unemployment_data = 
   read_csv("./Data/fivethirtyeight_datasets/unemployment.csv") %>% 
   janitor::clean_names() %>%
+  na.omit() %>% 
   pivot_longer(
     jan:dec,
     names_to = "month",
@@ -140,25 +127,20 @@ unemployment_data =
         "nov" = "November",
         "dec" = "December"))
 ```
-Join the datasets by merging snp into pols, and merging unemployment into the result.
-```{r}
+
+```{r joins}
 ##Join snp and pols
 economyfull_data = 
-  left_join(snp_data, polsmonth_data, by = c("year", "month")) %>% 
+  left_join(polsmonth_data, snp_data, by = c("year", "month")) %>% 
   
 ##Merge unemployment into result  
   left_join(unemployment_data, by = c("year", "month"))
 ```
 
-The snp dataset contained monthly data from 1950 to 2015 regarding the S&P stock index closing values. There are 787 rows and 3 columns. The pols-month dataset contained monthly data from 1947 to 2015 regarding the number of politicians (governors, senators, representatives, and the president) broken down by party (democratic or republican). There are 822 rows and 9 columns. The unemployment dataset contained monthly data from 1948 to 2015 regarding the unemployment percentage. There are 816 rows and 3 columns. The resulting combined dataset contains 787 rows and 11 columns, with data from 1950 to 2015.
+The snp_data dataset contained monthly data from 1950 to 2015 regarding the S&P stock index closing values. There are `r nrow(snp_data)` rows and `r ncol(snp_data)` columns. The polsmonth_data dataset contained monthly data from 1947 to 2015 regarding the number of politicians (governors, senators, representatives, and the president) broken down by party (democratic or republican). There are `r nrow(polsmonth_data)` rows and `r ncol(polsmonth_data)` columns. The unemployment_data dataset contained monthly data from 1948 to 2015 regarding the corresponding unemployment percentage. There are `r nrow(unemployment_data)` rows and `r ncol(unemployment_data)` columns. The resulting combined dataset, economyfull_data, contains `r nrow(economyfull_data)` rows and `r ncol(economyfull_data)` columns, with data from 1947 to 2015. As a result, there are some missing S&P close values and unemployment percentages since those datasets began collecting data after 1947. 
 
-*Problem 3*
-Load and tidy the data. Note that, although these data may seem fairly well formatted initially, the names of a categorical predictor and the case structure of string variables changed over time; you’ll need to address this in your data cleaning. Also, some rows seem duplicated, and these will need to be removed (hint: google something like “dplyr remove duplicate rows” to get started).
-
-Produce a well-structured, reader-friendly table showing the rank in popularity of the name “Olivia” as a female baby name over time; this should have rows for ethnicities and columns for year. Produce a similar table showing the most popular name among male children over time.
-
-Finally, for male, white non-hispanic children born in 2016, produce a scatter plot showing the number of children with a name (y axis) against the rank in popularity of that name (x axis).
-```{r}
+***Problem 3***
+```{r babynames}
 ##Read and clean popular baby names csv
 babynames_data = 
   read_csv("./Data/Popular_Baby_Names.csv") %>% 
@@ -174,7 +156,7 @@ babynames_data =
 distinct()  
 ```  
 
-```{r}
+```{r Olivia_rank}
 ##Make table showing rank in popularity of name Olivia over time
 Olivia_rank = babynames_data %>% 
   select(everything(), -count) %>% 
@@ -186,7 +168,7 @@ pivot_wider(
   select(everything(), -childs_first_name, -gender)
 ```
 
-```{r}
+```{r Male_rank}
 ##Make table showing most popular name among male children over time
 Male_rank = babynames_data %>% 
 select(everything(), -count) %>% 
@@ -196,11 +178,12 @@ pivot_wider(
   names_from = year_of_birth,
   values_from = childs_first_name,
 ) %>% 
-  select(everything(), -gender)
+  select(everything(), -gender, -rank)
 ```  
 
-Finally, for male, white non-hispanic children born in 2016, produce a scatter plot showing the number of children with a name (y axis) against the rank in popularity of that name (x axis).
-```{r}
+
+```{r, Scatterplot}
+##Make scatterplot for male, white non-hispanic children born in 2016 with number of children with a name (y axis) against rank of that name (x axis)
 filter(babynames_data, gender == "MALE", ethnicity == "WHITE NON HISPANIC", year_of_birth == "2016") %>% 
   ggplot(aes(x = rank, y = count)) +
   geom_point(alpha = 0.5) +
