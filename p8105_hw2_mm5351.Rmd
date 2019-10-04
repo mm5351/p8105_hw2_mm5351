@@ -57,12 +57,10 @@ mutate(
   month = as.character(month.name))
 ```
 
-In the Mr. Trash Wheel dataset, there are `r nrow(trash_data)` rows and `r ncol(trash_data)` columns. Each row represents data for a different dumpster, and many of the columns depict the type of trash found in the Inner Harbor of Baltimore. The median number of sports balls in a dumpster in 2017 was `r filter(trash_data, year == 2017) %>% pull(sports_balls) %>% median()`. The total number of trash collected between 2014 and 2018 was `r sum(pull(trash_data, weight_tons))` tons, which was incinerated and made to power `r sum(pull(trash_data, homes_powered))` homes. 
-
-In the combined precipiation dataset for 2017 and 2018, there are `r nrow(precipfull_data)` rows representing each month of the year and `r ncol(precipfull_data)` columns for month, year 2017, total precipation for year 2017, year 2018, and total precipiation for year 2018. The total precipiation for 2017 was `r sum(pull(precip2017_data, total))` inches. This compares to the total precipiation for 2018, which was `r sum(pull(precip2018_data, total))` inches.
+In the Mr. Trash Wheel dataset, there are `r nrow(trash_data)` rows and `r ncol(trash_data)` columns. Each row represents data for a different dumpster, and many of the columns depict the type of trash found in the Inner Harbor of Baltimore. The median number of sports balls in a dumpster in 2017 was `r filter(trash_data, year == 2017) %>% pull(sports_balls) %>% median()`. The total number of trash collected between 2014 and 2018 was `r sum(pull(trash_data, weight_tons))` tons, which was incinerated and made to power `r sum(pull(trash_data, homes_powered))` homes. In the combined precipiation dataset for 2017 and 2018, there are `r nrow(precipfull_data)` rows representing each month of the year and `r ncol(precipfull_data)` columns for month, year 2017, total precipation for year 2017, year 2018, and total precipiation for year 2018. The total precipiation for 2017 was `r sum(pull(precip2017_data, total))` inches. This compares to the total precipiation for 2018, which was `r sum(pull(precip2018_data, total))` inches.
 
 ***Problem 2***
-```{r pols-month, eval = TRUE}
+```{r pols-month}
 ##Read and clean pols-month.csv data
 polsmonth_data = 
   read_csv("./Data/fivethirtyeight_datasets/pols-month.csv") %>% 
@@ -173,14 +171,12 @@ pivot_wider(
 Male_rank = babynames_data %>% 
 select(everything(), -count) %>% 
 filter(gender == "MALE", rank == 1) %>% 
-  
 pivot_wider(
   names_from = year_of_birth,
   values_from = childs_first_name,
 ) %>% 
   select(everything(), -gender, -rank)
 ```  
-
 
 ```{r, Scatterplot}
 ##Make scatterplot for male, white non-hispanic children born in 2016 with number of children with a name (y axis) against rank of that name (x axis)
